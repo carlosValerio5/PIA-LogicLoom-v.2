@@ -1,0 +1,5 @@
+
+
+Se realizó una consulta el: 2023-11-20 10:54:57
+Búsqueda: https://swapi.dev/api/people/?search=
+Nombre busqueda: 
