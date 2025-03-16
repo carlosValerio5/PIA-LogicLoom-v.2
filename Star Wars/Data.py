@@ -63,6 +63,12 @@ def fetchData(connection):
 
             elif (extension == "species"):
                 species = element["name"]
+                cursor.execute("""
+                               INSERT INTO species(species)
+                               VALUES (%s)
+                               ON CONFLICT (species) DO NOTHING
+                               """, (species,))
+                connection.commit()
                 print(species)
 
             else:
