@@ -48,6 +48,17 @@ def fetchData(connection):
                 except ValueError:
                     population = None
                 density = calculateDensity(element)
+
+                cursor.execute("""
+                               INSERT INTO planets(planet, diameter, population, density)
+                               VALUES(%s, %s, %s, %s)
+                               ON CONFLICT (planet) DO UPDATE SET
+                               diameter = %s,
+                               population = %s,
+                               density = %s
+                               """, (planet, diameter, population, density, diameter, population, density))
+                connection.commit()
+
                 print(planet)
 
             elif (extension == "species"):
