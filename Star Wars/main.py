@@ -13,12 +13,15 @@ from datetime import datetime
 from statistics import mode, mean, median
 import shutil
 from colorama import Fore, Style, init  # Se usará colorama para cambiar los colores de las letras
+from opexl import abrirex
+
+#user defined modules
+from modulo_graficas import mostrar_graficoApa, mostrar_graficoEsp, mostrar_graficaDen
+from modulo_calculos import moda_planeta, mediana_peso, media_clima
 import PauseAndCls  # Es un módulo creado para limpiar o pausar pantalla
 import Carpetas_Archivos as CA 
 import Menus 
-from opexl import abrirex
-from modulo_graficas import mostrar_graficoApa, mostrar_graficoEsp, mostrar_graficaDen
-from modulo_calculos import moda_planeta, mediana_peso, media_clima
+from Data import connectToDb
 
 init()  # Esto inicializa la salida de texto de colores en la terminal
 
@@ -130,6 +133,10 @@ def crearExc(datos, opB, iP, iPla, iE): #Funcion para crear los excel
 
 
 if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
+
+    #Begin connection witg database
+    connection = connectToDb()
+
     iP = 1
     iE = 1
     iPla = 1
