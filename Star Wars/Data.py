@@ -49,6 +49,7 @@ def fetchData(connection):
                     population = None
                 density = calculateDensity(element)
 
+                #If register already exists update al fields except planet
                 cursor.execute("""
                                INSERT INTO planets(planet, diameter, population, density)
                                VALUES(%s, %s, %s, %s)
@@ -63,6 +64,8 @@ def fetchData(connection):
 
             elif (extension == "species"):
                 species = element["name"]
+
+                #if register already exists do nothing
                 cursor.execute("""
                                INSERT INTO species(species)
                                VALUES (%s)
@@ -73,6 +76,14 @@ def fetchData(connection):
 
             else:
                 film = element["title"]
+
+                #if register already exists do nothing
+                cursor.execute("""
+                               INSERT INTO films(film)
+                               VALUES (%s)
+                               ON CONFLICT (film) DO NOTHING
+                               """, (film, ))
+                connection.commit()
                 print(film)
         
 
