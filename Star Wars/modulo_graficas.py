@@ -120,10 +120,18 @@ def mostrar_graficaDen():
     plt.show()
 
 def calculateDensity(planet):
+
+    try:
+        diameter = float(planet["diameter"])
+    except ValueError:
+        return 0;
+
     area = 3.14*(float(planet['diameter'])/2)**2
 
     try:
         density = float(planet['population']) / area
     except ValueError:
+        density = 0
+    except ZeroDivisionError:
         density = 0
     return density
