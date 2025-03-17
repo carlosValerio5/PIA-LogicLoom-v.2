@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 
 import psycopg2 as pg
+import psycopg2.extras
 import requests
 import json
+import asyncio
+import aiohttp
 
 import config
 from modulo_graficas import calculateDensity
@@ -16,28 +19,47 @@ def connectToDb():
     #return connection object
     return connection
 
+#make requests asynchronously to save time
+async def fetch_data_async(url, endpoint, session):
+    async with session.get(url + endpoint) as response:
+        return await response.json()
+
 def fetchData(connection):
     url = "https://swapi.dev/api/"
     endpoints = {"people", "planets", "species", "films"}
     cursor = connection.cursor()
 
-    #reaching every endpoint required and storing data in db
-    for extension in endpoints:
-        response = requests.get(url+extension)
-        content = json.loads(response.text)
+    #commiting in batches to optimize time
+    batch_size = 100
+    people_data = []
+    planet_data = []
+    species_data = []
+    films_data = []
+
+    async def fetch_all_data():
+        async with aiohttp.ClientSession() as session:
+            tasks = []
+            for extension in endpoints:
+                tasks.append(fetch_data_async(url, extension, session))
+            return await asyncio.gather(*tasks)
+
+    response_data = asyncio.run(fetch_all_data())
+
+    #processing all data
+    for index, extension in enumerate(endpoints):
+        content = response_data[index]
+
 
         #number of elements in result
         count = content["count"]
 
         #number of pages for each endpoint
-        pages = int(count/10)
-        if (count%10 != 0):
-            pages+=1
+        pages = (count+9)//10
+
         for i in range(1, pages+1):
         
-            response = requests.get(url+extension+"/?page=%s" % (i,))
-            content = json.loads(response.text)
-            results = content["results"]
+            page_content = requests.get(url+extension+"/?page=%s" % (i,)).json()
+            results = page_content["results"]
 
             for element in results:
                 if(extension == "people"):
@@ -49,12 +71,12 @@ def fetchData(connection):
                     except ValueError:
                         mass = 0
                     #UPSERT query if row exists just update mass
-                    cursor.execute("""INSERT INTO people(person, mass)
-                                VALUES(%s, %s)
-                                ON CONFLICT (person) DO UPDATE SET
-                                mass = %s
-                                """, (person, mass, mass))
-                    connection.commit()
+                    #cursor.execute("""INSERT INTO people(person, mass)
+                    #            VALUES(%s, %s)
+                    #            ON CONFLICT (person) DO UPDATE SET
+                    #            mass = %s
+                    #            """, (person, mass, mass))
+                    people_data.append((person, mass))
 
                 elif (extension == "planets"):
                     planet = element["name"]
@@ -70,15 +92,15 @@ def fetchData(connection):
                     density = calculateDensity(element)
 
                     #If register already exists update al fields except planet
-                    cursor.execute("""
-                                   INSERT INTO planets(planet, diameter, population, density)
-                                   VALUES(%s, %s, %s, %s)
-                                   ON CONFLICT (planet) DO UPDATE SET
-                                   diameter = %s,
-                                   population = %s,
-                                   density = %s
-                                   """, (planet, diameter, population, density, diameter, population, density))
-                    connection.commit()
+                    #cursor.execute("""
+                    #               INSERT INTO planets(planet, diameter, population, density)
+                    #               VALUES(%s, %s, %s, %s)
+                    #               ON CONFLICT (planet) DO UPDATE SET
+                    #               diameter = %s,
+                    #              population = %s,
+                    #              density = %s
+                    #              """, (planet, diameter, population, density, diameter, population, density))
+                    planet_data.append((planet, diameter, population, density))
 
 
 
@@ -86,26 +108,71 @@ def fetchData(connection):
                     species = element["name"]
 
                     #if register already exists do nothing
-                    cursor.execute("""
-                                   INSERT INTO species(species)
-                                   VALUES (%s)
-                                   ON CONFLICT (species) DO NOTHING
-                                   """, (species,))
-                    connection.commit()
+                    #cursor.execute("""
+                    #               INSERT INTO species(species)
+                    #               VALUES (%s)
+                    #              ON CONFLICT (species) DO NOTHING
+                    #              """, (species,))
+                    species_data.append((species,))
 
 
                 else:
                     film = element["title"]
 
                     #if register already exists do nothing
-                    cursor.execute("""
-                                   INSERT INTO films(film)
-                                   VALUES (%s)
-                                   ON CONFLICT (film) DO NOTHING
-                                   """, (film, ))
-                    connection.commit()
+                    #cursor.execute("""
+                    #               INSERT INTO films(film)
+                    #               VALUES (%s)
+                    #               ON CONFLICT (film) DO NOTHING
+                    #               """, (film, ))
+                    films_data.append((film, ))
 
-        #update de people_species relationship table 
+    #update de people_species relationship table 
+
+    #insert update in batches
+    if people_data:
+        insert_query = """
+            INSERT INTO people(person, mass)
+            VALUES %s
+            ON CONFLICT (person) DO UPDATE SET mass = EXCLUDED.mass
+        """
+        pg.extras.execute_values (
+                cursor, insert_query, people_data, template=None, page_size=100
+                )
+
+    if planet_data:
+        insert_query = """
+            INSERT INTO planets(planet, diameter, population, density)
+            VALUES %s
+            ON CONFLICT (planet) DO UPDATE SET diameter = EXCLUDED.diameter,
+                                              population = EXCLUDED.population,
+                                              density = EXCLUDED.density
+        """
+        pg.extras.execute_values(
+                cursor, insert_query, planet_data, template=None, page_size=100
+                )
+
+    if species_data:
+        insert_query = """
+            INSERT INTO species(species)
+            VALUES %s
+            ON CONFLICT (species) DO NOTHING
+        """
+        pg.extras.execute_values(
+                cursor, insert_query, species_data, template=None, page_size=100
+                )
+
+    if films_data:
+        insert_query = """
+            INSERT INTO films(film)
+            VALUES %s
+            ON CONFLICT (film) DO NOTHING
+        """
+        pg.extras.execute_values(
+                cursor, insert_query,films_data, template=None, page_size=100
+                )
+
+    connection.commit()
     updateSpecies(connection)
 
 
@@ -136,12 +203,12 @@ def updateSpecies(connection):
         for element in results:
 
             homeworld = int(re.findall(r'\d+', element["homeworld"])[0])
-            print(homeworld)
+
 
             person_url = element["url"]
             person_id = counter
 
-            print("id"+str(person_id))
+
 
 
             species = list(element["species"])
@@ -168,4 +235,4 @@ def updateSpecies(connection):
             
     connection.commit()
 
-updateSpecies(connectToDb()) 
+
