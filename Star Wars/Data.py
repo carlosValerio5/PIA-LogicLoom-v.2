@@ -106,7 +106,7 @@ def fetchData(connection):
                     connection.commit()
 
         #update de people_species relationship table 
-        updateSpecies(connection)
+    updateSpecies(connection)
 
 
 
@@ -132,13 +132,16 @@ def updateSpecies(connection):
         response = requests.get(url+"/?page=" + str(i))
         content = response.json()
 
-        print(i)
         results = content.get("results", [])
         for element in results:
 
+            homeworld = int(re.findall(r'\d+', element["homeworld"])[0])
+            print(homeworld)
 
             person_url = element["url"]
             person_id = counter
+
+            print("id"+str(person_id))
 
 
             species = list(element["species"])
@@ -148,9 +151,21 @@ def updateSpecies(connection):
                 cursor.execute("""
                                INSERT INTO people_species (id_people, id_species)
                                VALUES (%s, %s) 
+                               ON CONFLICT (id_people, id_species) DO NOTHING
                                """, (person_id, species_id))
+
+
+            #updating homeworld field in people table to not waste resources in other function
+            cursor.execute("""
+                            UPDATE people
+                            SET homeworld = (%s)
+                            WHERE id_people = (%s)
+                            """, (homeworld, person_id))
+
+            #keeping track of the index of each person
             counter +=1
+
+            
     connection.commit()
-          
 
-
+updateSpecies(connectToDb()) 
