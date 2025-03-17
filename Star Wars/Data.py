@@ -6,6 +6,7 @@ import json
 
 import config
 from modulo_graficas import calculateDensity
+import re
 
 
 def connectToDb():
@@ -34,7 +35,7 @@ def fetchData(connection):
             pages+=1
         for i in range(1, pages+1):
         
-            response = requests.get(url+extension+"?page=%s" % (i,))
+            response = requests.get(url+extension+"/?page=%s" % (i,))
             content = json.loads(response.text)
             results = content["results"]
 
@@ -51,7 +52,8 @@ def fetchData(connection):
                     cursor.execute("""INSERT INTO people(person, mass)
                                 VALUES(%s, %s)
                                 ON CONFLICT (person) DO UPDATE SET
-                                mass = %s""", (person, mass, mass))
+                                mass = %s
+                                """, (person, mass, mass))
                     connection.commit()
 
                 elif (extension == "planets"):
@@ -103,6 +105,52 @@ def fetchData(connection):
                                    """, (film, ))
                     connection.commit()
 
+        #update de people_species relationship table 
+        updateSpecies(connection)
+
 
 
 #fetchData(connectToDb())
+
+def updateSpecies(connection):
+    url = "https://swapi.dev/api/people"
+    cursor = connection.cursor()
+
+
+    request = requests.get(url)
+    content = json.loads(request.text)
+
+    count = content["count"]
+
+    #number of pages for each endpoint
+    pages = int(count/10)
+    if (count%10 != 0):
+        pages+=1
+
+    counter = 1
+    for i in range(1, pages+1):
+        response = requests.get(url+"/?page=" + str(i))
+        content = response.json()
+
+        print(i)
+        results = content.get("results", [])
+        for element in results:
+
+
+            person_url = element["url"]
+            person_id = counter
+
+
+            species = list(element["species"])
+
+            for keySpecies in species:
+                species_id = int(re.findall(r'\d+', keySpecies)[0])
+                cursor.execute("""
+                               INSERT INTO people_species (id_people, id_species)
+                               VALUES (%s, %s) 
+                               """, (person_id, species_id))
+            counter +=1
+    connection.commit()
+          
+
+

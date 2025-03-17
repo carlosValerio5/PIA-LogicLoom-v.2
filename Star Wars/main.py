@@ -22,6 +22,7 @@ import PauseAndCls  # Es un módulo creado para limpiar o pausar pantalla
 import Carpetas_Archivos as CA 
 import Menus 
 from Data import connectToDb
+from Data import fetchData
 
 init()  # Esto inicializa la salida de texto de colores en la terminal
 
@@ -136,6 +137,9 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
 
     #Begin connection witg database
     connection = connectToDb()
+
+    #update or insert all data into data base
+    fetchData(connection) 
 
     iP = 1
     iE = 1
