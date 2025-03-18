@@ -35,6 +35,7 @@ def fetchData(connection):
     planet_data = []
     species_data = []
     films_data = []
+    people_films_data = [] #List for contents of people_films table
 
     async def fetch_all_data():
         async with aiohttp.ClientSession() as session:
@@ -62,8 +63,11 @@ def fetchData(connection):
             results = page_content["results"]
 
             for element in results:
+
                 if(extension == "people"):
+
                     person = element["name"]
+                    id_person = int(re.findall(r'\d+', element["url"])[0])
 
                     #if mass is unknown set mass to 0 in db
                     try:
@@ -71,12 +75,13 @@ def fetchData(connection):
                     except ValueError:
                         mass = 0
                     #UPSERT query if row exists just update mass
-                    #cursor.execute("""INSERT INTO people(person, mass)
-                    #            VALUES(%s, %s)
+                    #cursor.execute("""INSERT INTO people(id_people, person, mass)
+                    #            VALUES(%s, %s, %s)
                     #            ON CONFLICT (person) DO UPDATE SET
                     #            mass = %s
-                    #            """, (person, mass, mass))
-                    people_data.append((person, mass))
+                    #            """, (id_people, person, mass, mass))
+                    people_data.append((id_person, person, mass))
+                    #people_films_data.append()
 
                 elif (extension == "planets"):
                     planet = element["name"]
@@ -116,6 +121,7 @@ def fetchData(connection):
                     species_data.append((species,))
 
 
+                #section for films endpoint
                 else:
                     film = element["title"]
 
@@ -132,9 +138,11 @@ def fetchData(connection):
     #insert update in batches
     if people_data:
         insert_query = """
-            INSERT INTO people(person, mass)
+            INSERT INTO people(id_people, person, mass)
             VALUES %s
-            ON CONFLICT (person) DO UPDATE SET mass = EXCLUDED.mass
+            ON CONFLICT (id_people) DO UPDATE SET 
+            mass = EXCLUDED.mass,
+            person = EXCLUDED.person
         """
         pg.extras.execute_values (
                 cursor, insert_query, people_data, template=None, page_size=100
@@ -194,7 +202,7 @@ def updateSpecies(connection):
     if (count%10 != 0):
         pages+=1
 
-    counter = 1
+
     for i in range(1, pages+1):
         response = requests.get(url+"/?page=" + str(i))
         content = response.json()
@@ -204,9 +212,9 @@ def updateSpecies(connection):
 
             homeworld = int(re.findall(r'\d+', element["homeworld"])[0])
 
-
+            #since the error for people indexes was corrected now the id can be extracted from url
             person_url = element["url"]
-            person_id = counter
+            person_id = int(re.findall(r'\d+', person_url)[0])
 
 
 
@@ -230,7 +238,7 @@ def updateSpecies(connection):
                             """, (homeworld, person_id))
 
             #keeping track of the index of each person
-            counter +=1
+
 
             
     connection.commit()
