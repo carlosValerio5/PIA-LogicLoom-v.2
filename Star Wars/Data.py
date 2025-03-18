@@ -124,6 +124,16 @@ def fetchData(connection):
                 #section for films endpoint
                 else:
                     film = element["title"]
+                    id_film = int(re.findall(r'\d+', element["url"])[0])
+
+                    characters = list(element["characters"])
+
+
+                    for characterElement in characters:
+                        idAppearance = int(re.findall(r'\d+', characterElement)[0])
+                        people_films_data.append((id_film, idAppearance))
+
+
 
                     #if register already exists do nothing
                     #cursor.execute("""
@@ -178,6 +188,19 @@ def fetchData(connection):
         """
         pg.extras.execute_values(
                 cursor, insert_query,films_data, template=None, page_size=100
+                )
+    
+
+    #Insertion to relationship table people_films
+    if people_films_data:
+        insert_query = """
+        INSERT INTO people_films(id_film, id_people)
+        VALUES %s
+        ON CONFLICT (id_film, id_people) DO NOTHING
+        """
+
+        pg.extras.execute_values(
+                cursor, insert_query, people_films_data, template=None, page_size=100
                 )
 
     connection.commit()
