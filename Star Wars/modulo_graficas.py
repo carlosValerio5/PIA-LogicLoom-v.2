@@ -119,4 +119,19 @@ def mostrar_graficaDen():
     plt.title('Densidad Poblacional de Planetas de Star Wars',fontdict={'family': 'monospace', 'color':  '#663399', 'weight': 'bold', 'size': 16})
     plt.show()
 
+def calculateDensity(planet):
 
+    try:
+        diameter = float(planet["diameter"])
+    except ValueError:
+        return 0;
+
+    area = 3.14*(float(planet['diameter'])/2)**2
+
+    try:
+        density = float(planet['population']) / area
+    except ValueError:
+        density = 0
+    except ZeroDivisionError:
+        density = 0
+    return density
