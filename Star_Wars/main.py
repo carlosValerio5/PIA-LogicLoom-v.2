@@ -140,7 +140,7 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
 
     #update or insert all data into data base
     fetchData(connection) 
-
+    
 
     iP = 1
     iE = 1
@@ -167,7 +167,7 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
                 if int(sys.argv[2]) == 1:
                     mostrar_graficoApa()
                 elif int(sys.argv[2]) == 2:
-                    mostrar_graficoEsp()
+                    mostrar_graficoEsp(connection)
                 elif int(sys.argv[2]) == 3:
                     mostrar_graficaDen()
                 sys.exit()
@@ -236,7 +236,7 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
                     if opGrafs == 1:
                         mostrar_graficoApa()
                     elif opGrafs == 2:
-                        mostrar_graficoEsp()
+                        mostrar_graficoEsp(connection)
                     else:
                         mostrar_graficaDen()
                     PauseAndCls.pausa()

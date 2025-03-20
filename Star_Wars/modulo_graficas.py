@@ -2,29 +2,38 @@ import requests
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+import psycopg2 as pg
+import psycopg2.extras
+
 
 #Grafica de barras
-def obtener_datosEsp():
-    nombres = list()
+def obtener_datosEsp(connection):
+    names = list()
     pelis = list()
 
-    for i in range(1, 11):  # Pongan un número pequeño, puede tardar mucho
-        url = "http://swapi.dev/api/people/" + str(i) + '/'
-        response = requests.get(url)
+    cursor = connection.cursor()
+    cursor.execute("""
+                   SELECT person, id_people FROM people 
+                   """)
+    results = cursor.fetchall()
 
-        if response.status_code != 200:  # Si consultaramos alguna que no existe, es mejor terminar
-            break
+    for name in results:
+        names.append(name[0])
 
-        infoPersonaje = json.loads(response.text)
-        nombres.append(infoPersonaje["name"])
+    for i in range(len(names)):
+        cursor.execute("""
+                SELECT count(*) 
+                AS exact_count 
+                FROM people_films WHERE id_people = %s;
+                       """, (results[i][1], ))
+        pelis.append(cursor.fetchone()[0])
+  
 
-        num_apariciones = len(infoPersonaje["films"])
-        pelis.append(num_apariciones)
+    cursor.close()
+    return names, pelis
 
-    return nombres, pelis
-
-def mostrar_graficoApa():
-    nombres, pelis = obtener_datosEsp()
+def mostrar_graficoApa(connection):
+    nombres, pelis = obtener_datosEsp(connection)
     x = np.array(nombres)
     y = np.array(pelis)
     mycolors = ['#FF6F61', '#6B4226', '#99B2DD', '#D9BF77', '#52796F',
@@ -37,46 +46,70 @@ def mostrar_graficoApa():
     plt.show()
 
 #Grafica de Pastel
-def obtener_especies(url):
+def get_species(cursor):
     especies = []
 
-    while url:
+    cursor.execute("""
+                   SELECT id_species FROM species 
+                   """)
+    especies = cursor.fetchall()
+
+
+
+    """while url:
         response = requests.get(url)
         data = response.json()
         especies.extend(data['results'])
-        url = data['next']
+        url = data['next']"""
 
     return especies
 
-def obtener_cantidad(diccionario):
-    return diccionario['cantidad']
+def get_amount(diccionario):
+    return diccionario['amount']
 
-def mostrar_graficoEsp():
-    url_especies = 'https://swapi.dev/api/species/'
-    especies_data = obtener_especies(url_especies)
+def mostrar_graficoEsp(connection):
 
-    info= list()
-    for especie in especies_data:
-        info.append({'nombre': especie['name'],
-                 'cantidad': len(especie['people'])})
+    cursor = connection.cursor()
 
-    especies_ordenadas = sorted(info, key = obtener_cantidad, reverse = True)
+    species_data = get_species(cursor)
+    
+    cursor.execute("""
+                   SELECT species FROM species
+                   """)
+    
+    namesSpecies = cursor.fetchall()
 
-    top_5 = especies_ordenadas[:5]
+    counts = []
 
-    nombres_especies = list()
-    cantidad_personajes = list()
 
-    for especie in top_5:
-        nombres_especies.append(especie['nombre'])
-        cantidad_personajes.append(especie['cantidad'])
+    for name in namesSpecies:
+        cursor.execute("""
+                    SELECT  count(*) from people_species
+                    JOIN (SELECT species.id_species FROM species WHERE species = %s) ps on people_species.id_species = ps.id_species;
+                    """, name)
+        result = cursor.fetchone()
+        counts.append({'name' : name[0], 'amount' : result[0]})
+
+    #info= list()
+
+    ordered_species = sorted(counts, key = get_amount, reverse = True)
+
+    top_5 = ordered_species[:5]
+
+    species_names = list()
+    amount_characters = list()
+
+    for species in top_5:
+        species_names.append(species['name'])
+        amount_characters.append(species['amount'])
                                
-    y = np.array(cantidad_personajes)
+    y = np.array(amount_characters)
     colores = ['#8FB369', '#6A9EC3', '#F7CD5E', '#E8A5C6', '#D9D9D9']
 
-    plt.pie(y, labels= nombres_especies, autopct='%1.1f%%', shadow= True, colors= colores)
-    plt.title('Frecuencia de Especies', fontdict={'family': 'monospace', 'color':  'lightcoral', 'weight': 'bold', 'size': 16})
+    plt.pie(y, labels= species_names, autopct='%1.1f%%', shadow= True, colors= colores)
+    plt.title('Species Frequency', fontdict={'family': 'monospace', 'color':  'lightcoral', 'weight': 'bold', 'size': 16})
     plt.show()
+    cursor.close()
 
 
 #Grafica de dispersion
@@ -135,3 +168,7 @@ def mostrar_graficaDen():
     except ZeroDivisionError:
         density = 0
     return density
+
+
+
+
