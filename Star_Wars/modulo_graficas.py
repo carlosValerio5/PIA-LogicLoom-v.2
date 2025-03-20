@@ -138,11 +138,14 @@ def mostrar_graficoEsp(connection):
 def obtener_datosPln(cursor):
     planetas_data= list()
 
+    #Retrieve only the first 18 planets
     cursor.execute("""
-                   SELECT * from planets 
+                   SELECT * from planets
+                   LIMIT 18 OFFSET 0
                    """)
 
     planetas_data = cursor.fetchall()
+
 
     """for i in range(1,8):
         url= "http://swapi.dev/api/planets/"+str(i)+'/'

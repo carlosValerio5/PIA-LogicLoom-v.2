@@ -139,7 +139,7 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
     connection = connectToDb()
 
     #update or insert all data into data base
-    fetchData(connection) 
+    #fetchData(connection) 
     
 
     iP = 1
