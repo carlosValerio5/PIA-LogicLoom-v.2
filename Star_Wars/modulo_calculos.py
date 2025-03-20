@@ -14,7 +14,6 @@ def moda_planeta(connection):
                    """)
 
     planetas = cursor.fetchall()
-    print(planetas)
 
     # Calcular el planeta con más personajes usando la moda
     planeta_mascomun = mode(planetas)
@@ -85,6 +84,7 @@ def media_clima(connection):
 
   if diameterClimate:
     media_diam = mean(diameterClimate)
+    media_diam = "%.2f" % media_diam
     print(f"La media del diámetro de los planetas con clima '{clima_eleg}' es: {media_diam} km")
   else:
     print(f"No se encontraron planetas con el clima '{clima_eleg}' o no se encontraron diámetros válidos.")

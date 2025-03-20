@@ -157,11 +157,11 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
         try:#Si el programa recibe un parametro como una letra o decimal mandara error
             if int(sys.argv[1]) == 1:
                 if int(sys.argv[2]) == 1:
-                    mediana_peso()
+                    mediana_peso(connection)
                 elif int(sys.argv[2]) == 2:
-                    moda_planeta()
+                    moda_planeta(connection)
                 elif int(sys.argv[2]) == 3:
-                    media_clima()
+                    media_clima(connection)
                 sys.exit()
             elif int(sys.argv[1]) == 2:
                 if int(sys.argv[2]) == 1:
@@ -225,11 +225,11 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
                 if opCalGraf == 1:
                     opCalcs = Menus.menucalcs()
                     if opCalcs == 1:
-                        mediana_peso()
+                        mediana_peso(connection)
                     elif opCalcs == 2:
-                        moda_planeta()
+                        moda_planeta(connection)
                     else:
-                        media_clima()
+                        media_clima(connection)
                     PauseAndCls.pausa()
                 else:
                     opGrafs = Menus.menugrafs()
