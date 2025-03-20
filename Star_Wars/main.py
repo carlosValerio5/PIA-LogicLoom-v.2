@@ -165,11 +165,11 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
                 sys.exit()
             elif int(sys.argv[1]) == 2:
                 if int(sys.argv[2]) == 1:
-                    mostrar_graficoApa()
+                    mostrar_graficoApa(connection)
                 elif int(sys.argv[2]) == 2:
                     mostrar_graficoEsp(connection)
                 elif int(sys.argv[2]) == 3:
-                    mostrar_graficaDen()
+                    mostrar_graficaDen(connection)
                 sys.exit()
         except ValueError:
             print("\nLos argumentos deben ser números entros")
@@ -234,11 +234,11 @@ if __name__ == "__main__":  # AQUÍ IRÁ TODO LO QUE NO SEA FUNCIÓN
                 else:
                     opGrafs = Menus.menugrafs()
                     if opGrafs == 1:
-                        mostrar_graficoApa()
+                        mostrar_graficoApa(connection)
                     elif opGrafs == 2:
                         mostrar_graficoEsp(connection)
                     else:
-                        mostrar_graficaDen()
+                        mostrar_graficaDen(connection)
                     PauseAndCls.pausa()
             else:
                 print("Saliendo", end="")

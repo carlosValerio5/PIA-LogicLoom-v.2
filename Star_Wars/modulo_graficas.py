@@ -26,14 +26,35 @@ def obtener_datosEsp(connection):
                 AS exact_count 
                 FROM people_films WHERE id_people = %s;
                        """, (results[i][1], ))
-        pelis.append(cursor.fetchone()[0])
+
+        #list of tuples with name and amount
+        pelis.append((names[i], cursor.fetchone()[0]))
   
 
+    print(pelis)
     cursor.close()
-    return names, pelis
+    return pelis
 
 def mostrar_graficoApa(connection):
-    nombres, pelis = obtener_datosEsp(connection)
+
+    #Get data for al species
+    results  = obtener_datosEsp(connection)
+
+
+    #Sort by amount in descending order
+    results.sort(key = lambda tup: tup[1], reverse = True)
+
+    #only showing the 10 characters with the most appearances
+    top_10 = results[:10]
+
+
+    nombres = []
+    pelis = []
+
+    for i in range(10):
+        nombres.append(top_10[i][0])
+        pelis.append(top_10[i][1])
+
     x = np.array(nombres)
     y = np.array(pelis)
     mycolors = ['#FF6F61', '#6B4226', '#99B2DD', '#D9BF77', '#52796F',
@@ -114,34 +135,44 @@ def mostrar_graficoEsp(connection):
 
 #Grafica de dispersion
 
-def obtener_datosPln():
+def obtener_datosPln(cursor):
     planetas_data= list()
-    for i in range(1,8):
+
+    cursor.execute("""
+                   SELECT * from planets 
+                   """)
+
+    planetas_data = cursor.fetchall()
+
+    """for i in range(1,8):
         url= "http://swapi.dev/api/planets/"+str(i)+'/'
         response = requests.get(url)
 
         infoPlaneta = json.loads(response.text)
-        planetas_data.append(infoPlaneta)
+        planetas_data.append(infoPlaneta)"""
         
     return planetas_data
 
-def mostrar_graficaDen():
-    planetas_data = obtener_datosPln()
+def mostrar_graficaDen(connection):
+
+    cursor = connection.cursor()
+
+    planetas_data = obtener_datosPln(cursor)
     plan = list()
     den_pob = list()
     planFil = list()
 
-    for dicc in planetas_data:
-        if dicc['population'] != 'unknown' and dicc['diameter'] != '0' and dicc['population'] != '0' and dicc['diameter'] != 'unknown':
-            planFil.append(dicc)
+    for elem in planetas_data:
+        if elem[3] != None and elem[2] != 0:
+            planFil.append({"diameter": elem[2], "population" : elem[3], "name": elem[1]})
 
     for planeta in planFil:
         ar = 3.14*(float(planeta['diameter'])/2)**2
         den = float(planeta['population']) / ar
-        planeta['densidad'] = den
+        planeta['density'] = den
 
         plan.append(planeta['name'])
-        den_pob.append( planeta['densidad'])
+        den_pob.append( planeta['density'])
 
     plt.axis(ymin=0, ymax=18)
     plt.scatter(plan, den_pob, color = 'red')
@@ -151,6 +182,7 @@ def mostrar_graficaDen():
     plt.ylabel('Densidad poblacional',fontdict={'family': 'serif', 'color':  '#DDA0DD', 'weight': 'bold', 'size': 14})
     plt.title('Densidad Poblacional de Planetas de Star Wars',fontdict={'family': 'monospace', 'color':  '#663399', 'weight': 'bold', 'size': 16})
     plt.show()
+    cursor.close()
 
 def calculateDensity(planet):
 
