@@ -7,11 +7,12 @@ import json
 import asyncio
 import aiohttp
 
-import config
 from modulo_graficas import calculateDensity
 import re
 
 
+#change this to SQLAlchemy connection
+#method deprecated
 def connectToDb():
     #Creating connection to postgresql database
     connection = pg.connect(database="starwars", user=config.username, password=config.password)

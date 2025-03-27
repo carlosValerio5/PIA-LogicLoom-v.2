@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import psycopg2 as pg
 import psycopg2.extras
+from matplotlib.figure import Figure
 
 
 #Grafica de barras
@@ -29,9 +30,10 @@ def obtener_datosEsp(connection):
 
         #list of tuples with name and amount
         pelis.append((names[i], cursor.fetchone()[0]))
-  
 
-    print(pelis)
+  
+
+
     cursor.close()
     return pelis
 
@@ -81,7 +83,8 @@ def get_species(cursor):
         response = requests.get(url)
         data = response.json()
         especies.extend(data['results'])
-        url = data['next']"""
+        url = data['next']
+"""
 
     return especies
 
@@ -127,10 +130,15 @@ def mostrar_graficoEsp(connection):
     y = np.array(amount_characters)
     colores = ['#8FB369', '#6A9EC3', '#F7CD5E', '#E8A5C6', '#D9D9D9']
 
+
     plt.pie(y, labels= species_names, autopct='%1.1f%%', shadow= True, colors= colores)
     plt.title('Species Frequency', fontdict={'family': 'monospace', 'color':  'lightcoral', 'weight': 'bold', 'size': 16})
-    plt.show()
+
+    fig = plt.gcf()
+
     cursor.close()
+
+    return fig
 
 
 #Grafica de dispersion
@@ -152,7 +160,8 @@ def obtener_datosPln(cursor):
         response = requests.get(url)
 
         infoPlaneta = json.loads(response.text)
-        planetas_data.append(infoPlaneta)"""
+        planetas_data.append(infoPlaneta)
+"""
         
     return planetas_data
 
@@ -187,7 +196,8 @@ def mostrar_graficaDen(connection):
     plt.show()
     cursor.close()
 
-def calculateDensity(planet):
+
+def calculateDensity(planet):
 
     try:
         diameter = float(planet["diameter"])
